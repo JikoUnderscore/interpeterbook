@@ -2,20 +2,19 @@ use crate::{ast, lexer, token};
 
 
 
-pub struct Parser<'a> {
+pub struct Parser {
     pub lexer: lexer::Lexer,
     // pub lexer: & mut lexer::Lexer,
-    peek_token: token::Token<'a>,
-    curent_token: token::Token<'a>,
+    peek_token: token::Token,
+    curent_token: token::Token,
     pub errors: Vec<String>,
 }
 
-impl<'p> Parser<'p> {
+impl Parser {
     #[allow(unused)]
     pub fn new(mut lexer: lexer::Lexer) -> Self {
-        let ptr: *mut _ = &mut lexer;
-        let curent_token = unsafe { (*ptr).next_token() };
-        let peek_token = unsafe { (*ptr).next_token() };
+        let curent_token = lexer.next_token();
+        let peek_token = lexer.next_token();
 
         return Parser {
             lexer,
@@ -25,52 +24,52 @@ impl<'p> Parser<'p> {
         };
     }
 
-    // pub fn next_token(&'p mut self) {
-    //     self.curent_token = self.peek_token.clone(); // copy
-    //     self.peek_token = self.lexer.next_token(); // copy
+    pub fn next_token(& mut self) {
+        self.curent_token = self.peek_token.clone(); // copy
+        self.peek_token = self.lexer.next_token(); // copy
+    }
+
+    // #[allow(unused)]
+    // pub unsafe fn next_token_unsafe(p: *mut Parser) {
+    //     (*p).curent_token = (*p).peek_token.clone(); // copy
+    //     (*p).peek_token = (*p).lexer.next_token(); // copy
     // }
 
     #[allow(unused)]
-    pub unsafe fn next_token_unsafe(p: *mut Parser) {
-        (*p).curent_token = (*p).peek_token.clone(); // copy
-        (*p).peek_token = (*p).lexer.next_token(); // copy
-    }
-
-    #[allow(unused)]
-    pub fn parse_program(mut self) -> Result<(ast::Program<'p>, Self), ()> {
+    pub fn parse_program(&mut self) -> Result<ast::Program, ()> {
         let mut program = ast::Program {
             statements: Vec::new(),
         };
-        let p: *mut Parser = &mut self as *mut _;
+        // let p: *mut Parser = &mut self as *mut _;
 
-        while unsafe { (*p).curent_token.clone() } != token::Token::EOF {
+        while self.curent_token.clone() != token::Token::EOF {
         // while self.curent_token != token::Token::EOF {
-            if let Some(stmt) = unsafe { Parser::parse_statement_unsafe(p) } {
-            // if let Some(stmt) = self.parse_statement() {
+            // if let Some(stmt) = unsafe { Parser::parse_statement_unsafe(p) } {
+            if let Some(stmt) = self.parse_statement() {
                 program.statements.push(stmt);
             }
-            // self.next_token();
-            unsafe { Parser::next_token_unsafe(p) };
+            self.next_token();
+            // unsafe { Parser::next_token_unsafe(p) };
         }
 
-        return Ok((program, self));
+        return Ok(program);
     }
 
-    // fn parse_statement(&mut self) -> Option<ast::EStatements> {
-    //     match self.curent_token {
-    //         token::Token::LET => self.parse_let_statement(),
-    //         token::Token::RETURN => self.parse_return_statement(),
-    //         _ => None,
-    //     }
-    // }
-
-    unsafe fn parse_statement_unsafe(p: *mut Parser) -> Option<ast::EStatements> {
-        match (*p).curent_token {
-            token::Token::LET => (*p).parse_let_statement(),
-            token::Token::RETURN => (*p).parse_return_statement(),
+    fn parse_statement(&mut self) -> Option<ast::EStatements> {
+        match self.curent_token {
+            token::Token::LET => self.parse_let_statement(),
+            token::Token::RETURN => self.parse_return_statement(),
             _ => None,
         }
     }
+
+    // unsafe fn parse_statement_unsafe(p: *mut Parser) -> Option<ast::EStatements> {
+    //     match (*p).curent_token {
+    //         token::Token::LET => (*p).parse_let_statement(),
+    //         token::Token::RETURN => (*p).parse_return_statement(),
+    //         _ => None,
+    //     }
+    // }
 
     fn parse_return_statement(&'_ mut self) -> Option<ast::EStatements> {
         let stmt_token = self.curent_token.clone(); // copy
@@ -84,8 +83,8 @@ impl<'p> Parser<'p> {
         // TODO: We're skipping the expressions until we
         // encounter a semicolon
         while self.curent_token != token::Token::SEMICOLON {
-            // self.next_token();
-            unsafe { Parser::next_token_unsafe(self as *mut _) };
+            self.next_token();
+            // unsafe { Parser::next_token_unsafe(self as *mut _) };
         }
 
         return Some(ast::EStatements::ReturnStatement(stmt));
@@ -116,8 +115,8 @@ impl<'p> Parser<'p> {
         // TODO: We're skipping the expressions until we
         // encounter a semicolon
         while self.curent_token != token::Token::SEMICOLON {
-            // self.next_token();
-            unsafe { Parser::next_token_unsafe(self as *mut _) };
+            self.next_token();
+            // unsafe { Parser::next_token_unsafe(self as *mut _) };
         }
 
         return Some(ast::EStatements::LetStatement(stmt));
@@ -125,8 +124,8 @@ impl<'p> Parser<'p> {
 
     fn expect_peek(&mut self, t: token::Token) -> bool {
         if self.peek_token == t {
-            // self.next_token();
-            unsafe { Parser::next_token_unsafe(self as *mut _) };
+            self.next_token();
+            // unsafe { Parser::next_token_unsafe(self as *mut _) };
 
             return true;
         } else {
@@ -205,7 +204,7 @@ let foobar = 838383;
         let mut parser = Parser::new(lexer);
         let program;
         
-        ((program, parser)) = parser.parse_program().expect("wtf");
+        program = parser.parse_program().expect("wtf");
 
         check_parser_errors(&parser);
 
@@ -236,7 +235,7 @@ return 993322;
         let mut parser = Parser::new(lexer);
         let program;
 
-        ((program, parser)) = parser.parse_program().expect("wtf");
+        program = parser.parse_program().expect("wtf");
         check_parser_errors(&parser);
 
                 if program.statements.len() != 3 {

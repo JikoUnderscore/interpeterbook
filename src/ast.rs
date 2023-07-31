@@ -15,17 +15,17 @@ pub trait Expression: Node {
 }
 
 #[derive(Debug)]
-pub enum EStatements<'es> {
-    LetStatement(LetStatement<'es>),
-    ReturnStatement(ReturnStatement<'es>),
+pub enum EStatements {
+    LetStatement(LetStatement),
+    ReturnStatement(ReturnStatement),
 }
 #[allow(unused)]
 
-pub struct Program<'p> {
-    pub statements: Vec<EStatements<'p>>,
+pub struct Program {
+    pub statements: Vec<EStatements>,
 }
 
-impl Node for Program<'_> {
+impl Node for Program {
     fn token_literal(&self) -> Option<&str> {
         if !self.statements.is_empty() {
             let statement = self.statements.get(0).unwrap();
@@ -54,22 +54,34 @@ impl Node for Program<'_> {
 }
 
 #[derive(Debug)]
-pub struct LetStatement<'ls> {
-    pub token: token::Token<'ls>,
+pub struct LetStatement {
+    pub token: token::Token,
     // pub name: &'ls Identifier,
-    pub name: Identifier<'ls>,
-    pub value: Option<Identifier<'ls>>, // TODO remove Option
+    pub name: Identifier,
+    pub value: Option<Identifier>, // TODO remove Option
 }
 
-impl Statement for LetStatement<'_> {
+impl Statement for LetStatement {
     fn statement_node(&self) {}
 }
 
-impl Node for LetStatement<'_> {
+impl Node for LetStatement {
     fn token_literal(&self) -> Option<&str> {
-        match self.token {
-            token::Token::IDENT(l) => Some(l),
-            token::Token::INT(l) => Some(l),
+        match self.token.clone() {
+            token::Token::IDENT(l) => Some({
+                unsafe {
+                    let a = std::slice::from_raw_parts(l.data_ptr, l.len);
+
+                    std::str::from_utf8_unchecked(a)
+                }
+            }),
+            token::Token::INT(l) => Some({
+                unsafe {
+                    let a = std::slice::from_raw_parts(l.data_ptr, l.len);
+
+                    std::str::from_utf8_unchecked(a)
+                }
+            }),
             _ => None,
         }
     }
@@ -85,25 +97,36 @@ impl Node for LetStatement<'_> {
         }
         out.push(';');
 
-
         return out;
     }
 }
 
 #[derive(Debug)]
-pub struct ReturnStatement<'rs> {
-    pub token: token::Token<'rs>,
+pub struct ReturnStatement {
+    pub token: token::Token,
     // pub return_value: Identifier<'ls>,
 }
 
-impl Statement for ReturnStatement<'_> {
+impl Statement for ReturnStatement {
     fn statement_node(&self) {}
 }
-impl Node for ReturnStatement<'_> {
+impl Node for ReturnStatement {
     fn token_literal(&self) -> Option<&str> {
-        match self.token {
-            token::Token::IDENT(l) => Some(l),
-            token::Token::INT(l) => Some(l),
+        match self.token.clone() {
+            token::Token::IDENT(l) => Some({
+                unsafe {
+                    let a = std::slice::from_raw_parts(l.data_ptr, l.len);
+
+                    std::str::from_utf8_unchecked(a)
+                }
+            }),
+            token::Token::INT(l) => Some({
+                unsafe {
+                    let a = std::slice::from_raw_parts(l.data_ptr, l.len);
+
+                    std::str::from_utf8_unchecked(a)
+                }
+            }),
             _ => None,
         }
     }
@@ -120,41 +143,65 @@ impl Node for ReturnStatement<'_> {
 }
 
 #[derive(Debug)]
-pub struct Identifier<'i> {
-    pub token: token::Token<'i>,
+pub struct Identifier {
+    pub token: token::Token,
 }
 
-impl Expression for Identifier<'_> {
+impl Expression for Identifier {
     fn expression_node(&self) {}
 }
 
-impl Node for Identifier<'_> {
+impl Node for Identifier {
     fn token_literal(&self) -> Option<&str> {
         match self.token.clone() {
-            token::Token::IDENT(l) => Some(l),
-            token::Token::INT(l) => Some(l),
+            token::Token::IDENT(l) => Some({
+                unsafe {
+                    let a = std::slice::from_raw_parts(l.data_ptr, l.len);
+
+                    std::str::from_utf8_unchecked(a)
+                }
+            }),
+            token::Token::INT(l) => Some({
+                unsafe {
+                    let a = std::slice::from_raw_parts(l.data_ptr, l.len);
+
+                    std::str::from_utf8_unchecked(a)
+                }
+            }),
             _ => None,
         }
     }
 
     fn string(&self) -> String {
         match self.token.clone() {
-            token::Token::IDENT(l) => l.to_string(),
+            token::Token::IDENT(l) => l.to_str().to_string(),
             _ => panic!("wtf"),
         }
     }
 }
 
-pub struct ExpressionStatement<'a> {
-    token: token::Token<'a>,
+pub struct ExpressionStatement {
+    token: token::Token,
     // expression: Identifier<'ls>,
 }
 
-impl Node for ExpressionStatement<'_> {
+impl Node for ExpressionStatement {
     fn token_literal(&self) -> Option<&str> {
         match self.token.clone() {
-            token::Token::IDENT(l) => Some(l),
-            token::Token::INT(l) => Some(l),
+            token::Token::IDENT(l) => Some({
+                unsafe {
+                    let a = std::slice::from_raw_parts(l.data_ptr, l.len);
+
+                    std::str::from_utf8_unchecked(a)
+                }
+            }),
+            token::Token::INT(l) => Some({
+                unsafe {
+                    let a = std::slice::from_raw_parts(l.data_ptr, l.len);
+
+                    std::str::from_utf8_unchecked(a)
+                }
+            }),
             _ => None,
         }
     }
@@ -166,7 +213,7 @@ impl Node for ExpressionStatement<'_> {
     }
 }
 
-impl Statement for ExpressionStatement<'_> {
+impl Statement for ExpressionStatement {
     fn statement_node(&self) {
         todo!()
     }
@@ -174,7 +221,7 @@ impl Statement for ExpressionStatement<'_> {
 
 #[cfg(test)]
 mod tests {
-    use super::{EStatements, LetStatement, Program, Node};
+    use super::{EStatements, LetStatement, Node, Program};
 
     #[test]
     fn test_strin() {
@@ -184,16 +231,15 @@ mod tests {
             statements: vec![EStatements::LetStatement(LetStatement {
                 token: crate::token::Token::LET,
                 name: super::Identifier {
-                    token: crate::token::Token::IDENT("myVar"),
+                    token: crate::token::Token::IDENT("myVar".into()),
                 },
-                value: Some(super::Identifier { 
-                    token: crate::token::Token::IDENT("anotherVar") 
+                value: Some(super::Identifier {
+                    token: crate::token::Token::IDENT("anotherVar".into()),
                 }),
             })],
         };
 
         let program_str = program.string();
         assert_eq!(&program_str, expect_test);
-
     }
 }

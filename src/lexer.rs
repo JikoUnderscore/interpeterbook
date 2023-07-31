@@ -86,7 +86,8 @@ impl Lexer {
 						return token::lookup_ident(literal);
 				    } else if self.curent_char.is_ascii_digit() {
                         // return unsafe {token::Token::INT(std::str::from_utf8_unchecked(self.read_number()))}; 
-                        return token::Token::INT(self.read_number()); 
+                        let read_number = self.read_number();
+                        return token::Token::INT(read_number.into()); 
                     } else {
     				    token::Token::ILLEGAL
     				}
@@ -218,6 +219,7 @@ let result = add(five, ten);
 
     	for expected_token in expected.iter() {
     		let tok = lexer.next_token();
+            
     		assert_eq!(tok, *expected_token);
     	}
     }
